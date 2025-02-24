@@ -3,8 +3,14 @@ name: Pages
 on:
   push:
     branches:
-      - main # default branch
-
+      - master # default branch
+      
+# 设置工作流程权限（允许写入仓库内容）
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+  
 jobs:
   build:
     runs-on: ubuntu-latest
