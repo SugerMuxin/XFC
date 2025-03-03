@@ -14,36 +14,42 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout with Submodules
+        uses: actions/checkout@v4
         with:
-          submodules: recursive  # 确保子模块拉取
+          submodules: recursive  # 强制递归拉取子模块
+          fetch-depth: 0        # 完整拉取历史（某些主题需要）
 
-      - name: Use Node.js 20
+      - name: Setup Node.js 20
         uses: actions/setup-node@v4
         with:
           node-version: "20"
-
-      - name: Cache NPM dependencies
-        uses: actions/cache@v4
-        with:
-          path: node_modules
-          key: ${{ runner.OS }}-npm-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.OS }}-npm-
+          cache: npm  # 使用官方推荐缓存方式
 
       - name: Install Dependencies
-        run: npm install
+        run: |
+          npm install hexo --save  # 确保本地安装 Hexo 核心
+          npm install --force      # 强制安装所有依赖
 
-      - name: Install Hexo CLI
-        run: npm install -g hexo-cli  # 全局安装（推荐）
+      # 关键修复：主题依赖处理
+      - name: Install Theme Dependencies
+        run: |
+          cd themes/your-theme-name  # 替换为你的主题目录名
+          npm install
 
-      - name: Build
+      - name: Build Site
         run: |
           hexo clean
-          hexo generate  # 统一生成静态文件
+          hexo generate --debug  # 显示详细生成日志
 
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
+      # 构建验证步骤
+      - name: Verify Build Output
+        run: |
+          ls -alh public/
+          grep -r "DOCTYPE html" public/  # 确认存在 HTML 文件
+
+      - name: Upload Artifact
+        uses: actions/upload-pages-artifact@v2  # 修正为最新 v2 版本
         with:
           path: ./public
 
@@ -57,6 +63,6 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
-      - name: Deploy to GitHub Pages
+      - name: Deploy
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v2  # 保持版本一致性
