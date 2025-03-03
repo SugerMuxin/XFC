@@ -50,8 +50,6 @@ jobs:
         with:
           name: github-pages
           path: ./public
-          if-no-files-found: error
-          compression-level: 0
 
   deploy:
     needs: build
