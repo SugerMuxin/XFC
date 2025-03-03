@@ -3,12 +3,7 @@ name: Pages
 on:
   push:
     branches:
-      - master
-
-permissions:
-  contents: write
-  pages: write
-  id-token: write
+      - main # default branch
 
 jobs:
   build:
@@ -16,50 +11,39 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          # If your repository depends on submodule, please see: https://github.com/actions/checkout
           submodules: recursive
-          fetch-depth: 0
-
-      - name: Initialize Submodules
-        run: git submodule update --init --recursive
-
       - name: Use Node.js 20
         uses: actions/setup-node@v4
         with:
+          # Examples: 20, 18.19, >=16.20.2, lts/Iron, lts/Hydrogen, *, latest, current, node
+          # Ref: https://github.com/actions/setup-node#supported-version-syntax
           node-version: "20"
-          cache: npm
-
+      - name: Cache NPM dependencies
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: ${{ runner.OS }}-npm-cache
+          restore-keys: |
+            ${{ runner.OS }}-npm-cache
       - name: Install Dependencies
-        run: |
-          npm install hexo --save
-          npm install --force
-
+        run: npm install
       - name: Build
-        run: |
-          npx hexo clean
-          npx hexo generate --debug --dereference  # 关键修复：禁用符号链接
-        
-          # 删除残留符号链接
-          find ./public -type l -delete
-        
-          # 检查文件大小和结构
-          ls -laR ./public
-          du -sh ./public
-
-      - name: Upload Artifact
+        run: npm run build
+      - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          name: github-pages
           path: ./public
-
   deploy:
     needs: build
     permissions:
       pages: write
       id-token: write
-    runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
