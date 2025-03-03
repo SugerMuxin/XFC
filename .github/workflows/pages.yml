@@ -36,14 +36,22 @@ jobs:
       - name: Build
         run: |
           npx hexo clean
-          npx hexo generate --debug
-          ls -la ./public  # 确保public目录存在
+          npx hexo generate --debug --dereference  # 关键修复：禁用符号链接
+        
+          # 删除残留符号链接
+          find ./public -type l -delete
+        
+          # 检查文件大小和结构
+          ls -laR ./public
+          du -sh ./public
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: github-pages  # 严格使用此名称
+          name: github-pages
           path: ./public
+          if-no-files-found: error
+          compression-level: 0
 
   deploy:
     needs: build
@@ -57,4 +65,4 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4  # 自动处理下载
+        uses: actions/deploy-pages@v4
