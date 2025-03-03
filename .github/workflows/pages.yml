@@ -17,41 +17,54 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
+          fetch-depth: 0  # 获取所有历史以正确处理子模块
+
+      # 显式初始化子模块
+      - name: Initialize Submodules
+        run: git submodule update --init --recursive
 
       - name: Use Node.js 20
         uses: actions/setup-node@v4
         with:
           node-version: "20"
-          cache: npm  # 使用官方缓存策略
+          cache: npm
 
       - name: Install Dependencies
         run: |
-          npm install hexo --save  # 强制本地安装 Hexo 核心
+          npm install hexo --save
           npm install --force
-
-      - name: Install Hexo CLI
-        run: npm install -g hexo-cli
 
       - name: Build
         run: |
-          hexo clean
-          hexo generate --debug  # 输出调试信息
-          
-      - name: Upload Pages artifact
-        uses: actions/upload-artifact@v4  # 替换旧版本（v1/v2/v3）
+          npx hexo clean
+          npx hexo generate --debug
+          # 调试：检查public目录是否存在
+          ls -la ./public
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
         with:
-         path: ./public
+          name: public-artifact
+          path: ./public
 
   deploy:
     needs: build
     permissions:
       pages: write
       id-token: write
+    runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
     steps:
+      - name: Download Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: public-artifact
+          path: ./public
+
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4  # 保持版本一致性
+        uses: actions/deploy-pages@v4
+        with:
+          publish_dir: ./public  # 指向下载后的路径
