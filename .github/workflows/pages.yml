@@ -36,11 +36,14 @@ jobs:
         run: |
           hexo clean
           hexo generate --debug  # 输出调试信息
-
+          
       - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v2  # 关键修复点
+        uses: actions/upload-artifact@v4  # 替换旧版本（v1/v2/v3）
         with:
-          path: ./public
+         name: my-artifact
+         path: ./dist
+         compression-level: 0  # 可选：大文件禁用压缩
+         if-no-files-found: error  # 无文件时直接报错
 
   deploy:
     needs: build
